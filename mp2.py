@@ -84,8 +84,8 @@ class Process(multiprocessing.Process):
                 message = random.choice(MESSAGES)
                 self.send_message(message, addr)
             elif self.poll.poll(0):
-                    data, addr = self.sock.recvfrom(1024)
-                    print "Got message '%s' from %r" % (data, addr)
+                data, addr = self.sock.recvfrom(1024)
+                print "Got message '%s' from %r" % (data, addr)
 
 
 def main():
