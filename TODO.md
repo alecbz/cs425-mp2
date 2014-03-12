@@ -1,3 +1,3 @@
 # TODO
 
-- How do we implement a reliable multicast when our UDP-based unicast isn't reliable?
+- How do we implement a reliable multicast when our unicast isn't reliable? (becaue it drops messages)
