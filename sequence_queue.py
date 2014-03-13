@@ -15,9 +15,9 @@ class SequenceQueue:
 
     q = SequenceQueue()
     # a bunch of q.push() calls
-    assert q.pop().seq == 1
-    assert q.pop().seq == 2
-    assert q.pop().seq == 3'''
+    assert q.pop()[0] == 1
+    assert q.pop()[0] == 2
+    assert q.pop()[0] == 3'''
 
     def __init__(self, key=itemgetter(0)):
         self.key = key
