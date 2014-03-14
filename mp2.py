@@ -1,12 +1,18 @@
 import argparse
+import os
 import json
-import random
 import multiprocessing
-import select
 import socket
+import signal
+import random
+import threading
 import time
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from sys import argv, stdin
+
+from sequence_queue import SequenceQueue
+from unreliable_channel import UnreliableChannel
+from reliable_channel import ReliableChannel
 
 DEFAULT_PORT = 10000
 
@@ -41,7 +47,7 @@ def get_config():
             addresses = config.get('addresses', None)
 
     if not num_processes:
-        num_processes = len(addresses) if addresses else 5
+        num_processes = len(addresses) if addresses else 2
 
     if addresses:
         assert len(num_processes) == len(ips)
@@ -59,8 +65,6 @@ class Process(multiprocessing.Process):
         super(Process, self).__init__()
         self.port = port
         self.addresses = addresses
-        self.drop_rate = drop_rate
-        self.delay = delay
         self.peers = [
             addr for addr in self.addresses if addr != (local_ip(), self.port)]
 
@@ -68,24 +72,20 @@ class Process(multiprocessing.Process):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(('', self.port))
 
-        # create a poll set
-        self.poll = select.poll()
-        self.poll.register(self.sock.fileno(), select.POLLIN)
-
-    def send_message(self, message, addr):
-        if random.random() < self.drop_rate:
-            time.sleep(random.uniform(0, 2 * self.delay))
-            self.sock.sendto(message, addr)
+        self.unreliable_channel = UnreliableChannel(
+            self.sock, drop_rate, delay)
 
     def run(self):
+        # initialized here because this launches a thread
+        self.reliable_channel = ReliableChannel(self.unreliable_channel)
+
         while True:
-            if random.randrange(2):
-                addr = random.choice(self.peers)
-                message = random.choice(MESSAGES)
-                self.send_message(message, addr)
-            elif self.poll.poll(0):
-                data, addr = self.sock.recvfrom(1024)
-                print "Got message '%s' from %r" % (data, addr)
+            addr = random.choice(self.peers)
+            message = random.choice(MESSAGES)
+            self.reliable_channel.unicast(message, addr)
+            if self.reliable_channel.can_recv():
+                print self.reliable_channel.recv()
+            time.sleep(0.2)
 
 
 def main():
@@ -109,7 +109,6 @@ def main():
         p.start()
     for p in processes:
         p.join()
-
 
 if __name__ == '__main__':
     main()
