@@ -77,7 +77,8 @@ class ReliableChannel:
             with self.acks_cond:
                 max_wait = 2 * self.unreliable_channel.delay_avg
                 start = time.time()
-                while not ((addr, msg.seq) in self.acks) and (time.time() - start < max_wait):
+                while not ((addr, msg.seq) in self.acks) and (
+                        time.time() - start < max_wait):
                     self.acks_cond.wait(0.1)
                 if (addr, msg.seq) in self.acks:
                     self.acks.remove((addr, msg.seq))

@@ -10,7 +10,7 @@ class UnreliableChannel:
     python objects via pickle serialization, as well as "simulated"
     latency/lossiness in the form of an explicit average delay time and
     message drop rate.
-    
+
     UnreliableChannel is also thread-safe: it ensures its socket is not
     used concurrently for send()ing and recv()ing.'''
 
