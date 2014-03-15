@@ -10,7 +10,6 @@ import time
 from collections import defaultdict, namedtuple
 from sys import argv, stdin
 
-from sequence_queue import SequenceQueue
 from unreliable_channel import UnreliableChannel
 from reliable_channel import ReliableChannel
 
@@ -47,7 +46,7 @@ def get_config():
             addresses = config.get('addresses', None)
 
     if not num_processes:
-        num_processes = len(addresses) if addresses else 2
+        num_processes = len(addresses) if addresses else 5
 
     if addresses:
         assert len(num_processes) == len(ips)
