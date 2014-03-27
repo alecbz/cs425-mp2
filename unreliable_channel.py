@@ -31,5 +31,5 @@ class UnreliableChannel:
     def recv(self):
         with self.recv_lock:
             data, addr = self.sock.recvfrom(1024)
-        msg = pickle.loads(data)
+        msg = pickle.loads(data) #Message(seq=1, data=Message(seq=1, data='c', id=3), id=3)
         return msg, addr
