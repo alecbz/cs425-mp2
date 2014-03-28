@@ -31,7 +31,7 @@ class FifoMulticastChannel:
     def recv(self):
         return self.delivered.get()
 
-    def multicast(self, obj, group, vector, from_id):
+    def multicast(self, obj, group, from_id):
         # group is a list
         self.seq += 1
         msg = Message(self.seq, obj, from_id)
