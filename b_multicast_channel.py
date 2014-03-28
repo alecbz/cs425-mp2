@@ -4,7 +4,7 @@ from Queue import Queue
 from collections import namedtuple
 from reliable_channel import ReliableChannel
 
-Message = None
+Message = namedtuple('Message', ['seq', 'data', 'id'])
 
 
 class BMulticastChannel:
@@ -15,10 +15,7 @@ class BMulticastChannel:
         self.ordering_scheme = reliable_channel.ordering_scheme
         # causal uses vector, total uses seq
         if self.ordering_scheme == "fifo_ordering":
-            Message = namedtuple('Message', ['seq', 'data', 'id'])
             self.seq = 0
-        elif self.ordering_scheme == "causal_ordering":
-            Message = namedtuple('Message', ['vector', 'data', 'id'])
 
         # each processes' way of knowing what messages it has delivered
         self.delivered = Queue()
