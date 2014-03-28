@@ -90,7 +90,7 @@ class Process(multiprocessing.Process):
 
         while True:
             # print str(self.port) + " " +  str(self.msg_vector)
-            num_processes_in_group = random.uniform(0, len(self.addresses) - 1)
+            num_processes_in_group = random.randint(1, len(self.addresses) - 1)
             group = random.sample(self.peers, num_processes_in_group)
 
             message = random.choice(MESSAGES)
