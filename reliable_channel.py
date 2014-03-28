@@ -30,6 +30,7 @@ class ReliableChannel:
         self.messages_cond = threading.Condition()
 
         self.listener = threading.Thread(target=self.listen)
+        self.listener.daemon = True
         self.listener.start()
 
     def listen(self):

@@ -1,5 +1,6 @@
 import unittest
-from collections import deque
+# from collections import deque
+from Queue import Queue
 from mock import patch
 
 from unreliable_channel import UnreliableChannel
@@ -8,13 +9,14 @@ from unreliable_channel import UnreliableChannel
 class FakeSocket:
 
     def __init__(self):
-        self.messages = deque()
+        # self.messages = deque()
+        self.messages = Queue()
 
     def sendto(self, data, addr):
-        self.messages.append((data, addr))
+        self.messages.put((data, addr))
 
     def recvfrom(self, size):
-        return self.messages.popleft()
+        return self.messages.get()
 
 
 class UnreliableChannelTest(unittest.TestCase):
@@ -45,7 +47,8 @@ class UnreliableChannelTest(unittest.TestCase):
     def test_unicast_drop_and_delay(self):
         ch = UnreliableChannel(self.sock, 0.5, 0.2)
 
-        with patch('random.random', return_value=0.75):  # message will go through
+        # message will go through
+        with patch('random.random', return_value=0.75):
             ch.unicast(self.obj, self.addr)
         obj, addr = ch.recv()
         self.assertEqual(obj, self.obj)
@@ -53,7 +56,7 @@ class UnreliableChannelTest(unittest.TestCase):
 
         with patch('random.random', return_value=0.25):
             ch.unicast(self.obj, self.addr)
-        self.assertEqual(len(self.sock.messages), 0)
+        self.assertTrue(self.sock.messages.empty())
 
 
 if __name__ == '__main__':

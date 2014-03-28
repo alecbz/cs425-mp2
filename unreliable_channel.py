@@ -22,11 +22,15 @@ class UnreliableChannel:
         self.send_lock = threading.Lock()
         self.recv_lock = threading.Lock()
 
-    def unicast(self, obj, addr):
+    def actual_unicast(self, obj, addr):
         if random.random() > self.drop_rate:
             time.sleep(random.uniform(0, 2 * self.delay_avg))
             with self.send_lock:
                 self.sock.sendto(pickle.dumps(obj), addr)
+
+    def unicast(self, obj, addr):
+        t = threading.Thread(target=self.actual_unicast, args=(obj, addr))
+        t.start()
 
     def recv(self):
         with self.recv_lock:
