@@ -59,7 +59,7 @@ class ReliableChannel:
                     # create Ack response for sender
                     ack = Ack(msg.seq)
                 elif self.ordering_scheme == "causal_ordering":
-                    vector_str = self.intlist_to_string(msg.data.vector)
+                    vector_str = self.intlist_to_string(msg.data.seq)
                     ack = Ack(vector_str)
                 self.unreliable_channel.unicast(ack, addr)
                 with self.messages_cond:
@@ -92,10 +92,10 @@ class ReliableChannel:
                     causal_cond = True
                     for i in range(0, len(self.msg_vector)):
                         if i != msg.data.id:
-                            if self.msg_vector[i] < msg.data.vector[i]:
+                            if self.msg_vector[i] < msg.data.seq[i]:
                                 causal_cond = False
                                 break
-                    fifo_cond = (msg.data.vector[msg.id]
+                    fifo_cond = (msg.data.seq[msg.id]
                                  == (self.msg_vector[msg.id] + 1))
                     if fifo_cond and causal_cond:
                         retlist.append((msg.data.id, msg))
@@ -119,7 +119,7 @@ class ReliableChannel:
             elif self.ordering_scheme == "causal_ordering":
                 from_id, msg = available.pop()
                 self.message_queue.remove(msg)
-                return from_id, msg.data, msg.vector
+                return from_id, msg.data, msg.seq
 
     # we need two different unicast functions for causal and total ordering
 
@@ -131,7 +131,7 @@ class ReliableChannel:
             with self.acks_cond:
                 max_wait = 2 * self.unreliable_channel.delay_avg
                 start = time.time()
-                vector_str = self.intlist_to_string(msg.data.vector)
+                vector_str = self.intlist_to_string(msg.data.seq)
                 # if addr and seq number aren't in acks set, wait until they
                 # are
                 while not ((addr, vector_str) in self.acks) and (
