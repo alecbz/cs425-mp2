@@ -91,13 +91,7 @@ class Process(multiprocessing.Process):
         while True:
             # print str(self.port) + " " +  str(self.msg_vector)
             num_processes_in_group = random.uniform(0, len(self.addresses) - 1)
-            # insert first addr into group and then randomly populate
-            group = [random.choice(self.peers)]
-            for i in range(0, int(num_processes_in_group)):
-                rand_addr = random.choice(self.peers)
-                while rand_addr in group:
-                    rand_addr = random.choice(self.peers)
-                group.append(rand_addr)
+            group = random.sample(self.peers, num_processes_in_group)
 
             message = random.choice(MESSAGES)
             if self.ordering_scheme == "fifo_ordering":
