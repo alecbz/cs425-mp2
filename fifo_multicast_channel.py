@@ -24,9 +24,8 @@ class FifoMulticastChannel:
 
     def listen(self):
         while True:
-            if self.reliable_channel.can_recv():
-                addr, msg = self.reliable_channel.recv()
-                self.delivered.put((addr, msg))
+            addr, msg = self.reliable_channel.recv()
+            self.delivered.put((addr, msg))
 
     def recv(self):
         return self.delivered.get()
