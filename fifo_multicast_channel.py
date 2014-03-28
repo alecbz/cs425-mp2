@@ -20,6 +20,7 @@ class FifoMulticastChannel:
         # target is the callable object to be invoked in a separate thread on
         # start()
         self.listener = threading.Thread(target=self.listen)
+        self.listener.daemon = True
         self.listener.start()
 
     def listen(self):
