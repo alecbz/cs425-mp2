@@ -85,7 +85,7 @@ class Process(multiprocessing.Process):
         self.proc_idx = multiprocessing.current_process()._identity[0] - 1
         # initialized here because this launches a thread
         self.reliable_channel = ReliableChannel(
-            self.unreliable_channel, self.ordering_scheme, self.proc_idx, self.msg_vector)
+            self.unreliable_channel, self.ordering_scheme, self.msg_vector)
         self.b_multicast_channel = BMulticastChannel(self.reliable_channel)
 
         while True:
