@@ -12,7 +12,7 @@ from sys import argv, stdin
 
 from unreliable_channel import UnreliableChannel
 from reliable_channel import ReliableChannel
-from b_multicast_channel import BMulticastChannel 
+from b_multicast_channel import BMulticastChannel
 
 DEFAULT_PORT = 40060
 
@@ -21,6 +21,7 @@ Address = namedtuple('Address', ['ip', 'port'])
 MESSAGES = ['a', 'b', 'c', 'd', 'e']
 
 num_processes = None
+
 
 def local_ip():
     # Taken from http://stackoverflow.com/a/166589/598940. A bit of a hack,
@@ -65,7 +66,7 @@ class Process(multiprocessing.Process):
     def __init__(self, port, addresses, drop_rate, delay, ordering_scheme):
         super(Process, self).__init__()
         self.port = port
-        self.ordering_scheme = ordering_scheme 
+        self.ordering_scheme = ordering_scheme
         self.addresses = addresses
         self.peers = [
             addr for addr in self.addresses if addr != (local_ip(), self.port)]
@@ -75,25 +76,26 @@ class Process(multiprocessing.Process):
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('', self.port))
         file_name = str(port)
-        self.text_file = open(file_name, 'w') 
+        self.text_file = open(file_name, 'w')
         self.unreliable_channel = UnreliableChannel(
             self.sock, drop_rate, delay)
-        #initialize vector 
-        self.msg_vector = [0]*num_processes
+        # initialize vector
+        self.msg_vector = [0] * num_processes
 
     def run(self):
-        #for causal ordering, idx of the curr process in vector
+        # for causal ordering, idx of the curr process in vector
         self.proc_idx = multiprocessing.current_process()._identity[0] - 1
         # initialized here because this launches a thread
-        self.reliable_channel = ReliableChannel(self.unreliable_channel, self.ordering_scheme, self.proc_idx, self.msg_vector)
-        self.b_multicast_channel = BMulticastChannel(self.reliable_channel) 
+        self.reliable_channel = ReliableChannel(
+            self.unreliable_channel, self.ordering_scheme, self.proc_idx, self.msg_vector)
+        self.b_multicast_channel = BMulticastChannel(self.reliable_channel)
 
         while True:
-            #print str(self.port) + " " +  str(self.msg_vector)
-            num_processes_in_group = random.uniform(0,len(self.addresses)-1)
-            #insert first addr into group and then randomly populate
+            # print str(self.port) + " " +  str(self.msg_vector)
+            num_processes_in_group = random.uniform(0, len(self.addresses) - 1)
+            # insert first addr into group and then randomly populate
             group = [random.choice(self.peers)]
-            for i in range(0,int(num_processes_in_group)):
+            for i in range(0, int(num_processes_in_group)):
                 rand_addr = random.choice(self.peers)
                 while rand_addr in group:
                     rand_addr = random.choice(self.peers)
@@ -101,21 +103,29 @@ class Process(multiprocessing.Process):
 
             message = random.choice(MESSAGES)
             if self.ordering_scheme == "fifo_ordering":
-                #message is one of [A,B,...E]
-                self.b_multicast_channel.multicast(message,group,None,self.proc_idx)
+                # message is one of [A,B,...E]
+                self.b_multicast_channel.multicast(
+                    message, group, None, self.proc_idx)
                 print "multicasting from " + str(self.port) + " to: " + str(group) + " the message " + message
-                self.text_file.write("multicasting from " + str(self.port) + " to: " + str(group) + " the message " + message + "\n")
+                self.text_file.write("multicasting from " + str(self.port)
+                                     + " to: " + str(group) + " the message " + message + "\n")
             elif self.ordering_scheme == "causal_ordering":
-                self.msg_vector[self.proc_idx] = self.msg_vector[self.proc_idx] + 1
-                self.b_multicast_channel.multicast(message, group, self.msg_vector,self.proc_idx) #stalls here
+                self.msg_vector[self.proc_idx] = self.msg_vector[
+                    self.proc_idx] + 1
+                # stalls here
+                self.b_multicast_channel.multicast(
+                    message, group, self.msg_vector, self.proc_idx)
                 print "multicasting from " + str(self.port) + " to: " + str(group) + " the message " + message
-                self.text_file.write("multicasting from " + str(self.port) + " to: " + str(group) + " the message " + message + " current vec: " + str(self.msg_vector) + "\n")
+                self.text_file.write("multicasting from " + str(self.port) + " to: " + str(group)
+                                     + " the message " + message + " current vec: " + str(self.msg_vector) + "\n")
             self.text_file.flush()
             if self.b_multicast_channel.delivered.not_empty:
                 if self.ordering_scheme == "fifo_ordering":
-                    self.text_file.write("Received " + str(self.b_multicast_channel.recv()) + "\n")
+                    self.text_file.write(
+                        "Received " + str(self.b_multicast_channel.recv()) + "\n")
                 elif self.ordering_scheme == "causal_ordering":
-                    self.text_file.write("Received " + str(self.b_multicast_channel.recv()) + " current vec: " + str(self.msg_vector) + "\n")
+                    self.text_file.write("Received " + str(self.b_multicast_channel.recv())
+                                         + " current vec: " + str(self.msg_vector) + "\n")
                 self.text_file.flush()
             time.sleep(0.2)
 
