@@ -29,12 +29,7 @@ class FifoMulticastChannel:
                 self.delivered.put((addr, msg))
 
     def recv(self):
-        if self.ordering_scheme == "causal_ordering":
-            addr, deliv_msg, vector = self.delivered.get()
-            self.reliable_channel.msg_vector[deliv_msg.id] += 1
-            return deliv_msg
-        elif self.ordering_scheme == "fifo_ordering":
-            return self.delivered.get()
+        return self.delivered.get()
 
     def multicast(self, obj, group, vector, from_id):
         # group is a list
