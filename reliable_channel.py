@@ -6,7 +6,7 @@ from collections import defaultdict, namedtuple
 from heapq import *
 
 
-Message = None
+Message = namedtuple('Message', ['seq', 'data', 'id'])
 Ack = namedtuple('Ack', ['ack'])
 
 
@@ -17,14 +17,11 @@ class ReliableChannel:
     basis, and no duplicated delivery.'''
     # changed based on ordering schemes
 
-    def __init__(self, unreliable_channel, ordering_scheme, proc_idx, msg_vector):
+    def __init__(self, unreliable_channel, ordering_scheme="fifo_ordering", proc_idx=None, msg_vector=None):
         self.ordering_scheme = ordering_scheme
-        global Message
         if self.ordering_scheme == "fifo_ordering":
-            Message = namedtuple('Message', ['seq', 'data', 'id'])
             self.seq = defaultdict(int)
         elif self.ordering_scheme == "causal_ordering":
-            Message = namedtuple('Message', ['vector', 'data', 'id'])
             self.message_queue = []
         self.unreliable_channel = unreliable_channel
         self.proc_idx = proc_idx
@@ -148,7 +145,7 @@ class ReliableChannel:
                     return
 
     # data is Message(seq,[A,B..E],from_id)
-    def unicast(self, data, addr, from_id):
+    def unicast(self, data, addr, from_id=None):
         self.seq[addr] += 1  # get the sequence number for this message
         msg = Message(self.seq[addr], data, from_id)
         while True:
