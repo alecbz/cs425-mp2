@@ -20,8 +20,6 @@ Address = namedtuple('Address', ['ip', 'port'])
 
 MESSAGES = ['a', 'b', 'c', 'd', 'e']
 
-num_processes = None
-
 
 def local_ip():
     # Taken from http://stackoverflow.com/a/166589/598940. A bit of a hack,
@@ -40,7 +38,7 @@ def local_ip():
 
 def get_config():
     addresses = None
-    global num_processes
+    num_processes = None
 
     if len(argv) >= 2:
         with open(argv[1], 'r') as f:
@@ -80,7 +78,7 @@ class Process(multiprocessing.Process):
         self.unreliable_channel = UnreliableChannel(
             self.sock, drop_rate, delay)
         # initialize vector
-        self.msg_vector = [0] * num_processes
+        self.msg_vector = [0] * len(addresses)
 
     def run(self):
         # for causal ordering, idx of the curr process in vector
