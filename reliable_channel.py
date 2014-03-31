@@ -17,11 +17,12 @@ class ReliableChannel:
     basis, and no duplicated delivery.'''
     # changed based on ordering schemes
 
-    def __init__(self, unreliable_channel, ordering_scheme="fifo_ordering", msg_vector=None):
+    def __init__(self, unreliable_channel, ordering_scheme="fifo_ordering"):
         self.ordering_scheme = ordering_scheme
         if self.ordering_scheme == "fifo_ordering":
             self.seq = defaultdict(int)
         elif self.ordering_scheme == "causal_ordering":
+            # self.seq = defaultdict( # leftoff
             self.message_queue = []
         self.unreliable_channel = unreliable_channel
         self.msg_vector = msg_vector
