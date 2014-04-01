@@ -60,10 +60,10 @@ class ReliableChannel:
         # iterating
         messages_copy = copy.deepcopy(dict(self.messages))
         retlist = [(addr, heap)
-                for (addr, heap) in messages_copy.iteritems()
-                # if heap is non-empty and msg seq number equals the next
-                # seq number to be read
-                if heap and heap[0].seq == self.next_pop[addr]]
+                   for (addr, heap) in messages_copy.iteritems()
+                   # if heap is non-empty and msg seq number equals the next
+                   # seq number to be read
+                   if heap and heap[0].seq == self.next_pop[addr]]
         return retlist
 
     def can_recv(self):
