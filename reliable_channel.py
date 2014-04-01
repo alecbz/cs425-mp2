@@ -6,7 +6,7 @@ from collections import defaultdict, namedtuple
 from heapq import *
 
 
-Message = namedtuple('Message', ['seq', 'data', 'id'])
+Message = namedtuple('Message', ['seq', 'data'])
 Ack = namedtuple('Ack', ['ack'])
 
 
@@ -17,11 +17,10 @@ class ReliableChannel:
     basis, and no duplicated delivery.'''
     # changed based on ordering schemes
 
-    def __init__(self, unreliable_channel, ordering_scheme="fifo_ordering"):
-        self.ordering_scheme = ordering_scheme
+    def __init__(self, unreliable_channel):
         self.seq = defaultdict(int)
         self.unreliable_channel = unreliable_channel
-        self.msg_vector = msg_vector
+
         # a set of (addr, seq) pairs for which we've recieved acks
         self.acks = set([])
         self.acks_cond = threading.Condition()
@@ -51,7 +50,7 @@ class ReliableChannel:
                 self.unreliable_channel.unicast(ack, addr)
                 with self.messages_cond:
                     # if the msg sequence isn't earlier than next seq to pop,
-                    # store it. fifo ordering
+                    # store it.
                     if not msg.seq < self.next_pop[addr]:
                         heappush(self.messages[addr], msg)
 
@@ -81,9 +80,9 @@ class ReliableChannel:
             self.next_pop[addr] += 1
             return addr, msg.data
 
-    def unicast(self, data, addr, from_id=None):
+    def unicast(self, data, addr):
         self.seq[addr] += 1  # get the sequence number for this message
-        msg = Message(self.seq[addr], data, from_id)
+        msg = Message(self.seq[addr], data)
         while True:
             # send a message
             self.unreliable_channel.unicast(msg, addr)
