@@ -12,7 +12,7 @@ from sys import argv, stdin
 
 from unreliable_channel import UnreliableChannel
 from reliable_channel import ReliableChannel
-from b_multicast_channel import BMulticastChannel
+from casual_multicast_channel import CasualMulticastChannel
 
 DEFAULT_PORT = 40060
 
@@ -77,49 +77,30 @@ class Process(multiprocessing.Process):
         self.text_file = open(file_name, 'w')
         self.unreliable_channel = UnreliableChannel(
             self.sock, drop_rate, delay)
-        # initialize vector
-        self.msg_vector = [0] * len(addresses)
 
     def run(self):
         # for causal ordering, idx of the curr process in vector
         self.proc_idx = multiprocessing.current_process()._identity[0] - 1
         # initialized here because this launches a thread
-        self.reliable_channel = ReliableChannel(
-            self.unreliable_channel, self.ordering_scheme, self.msg_vector)
-        self.b_multicast_channel = BMulticastChannel(self.reliable_channel)
+        self.reliable_channel = ReliableChannel(self.unreliable_channel)
+        self.casual_multicast_channel = CasualMulticastChannel(
+            self.reliable_channel, self.proc_idx, len(self.addresses))
 
         while True:
-            # print str(self.port) + " " +  str(self.msg_vector)
-            num_processes_in_group = random.randint(1, len(self.addresses) - 1)
-            group = random.sample(self.peers, num_processes_in_group)
-
+            group = self.addresses
             message = random.choice(MESSAGES)
-            if self.ordering_scheme == "fifo_ordering":
-                # message is one of [A,B,...E]
-                self.b_multicast_channel.multicast(
-                    message, group, None, self.proc_idx)
-                print "multicasting from " + str(self.port) + " to: " + str(group) + " the message " + message
-                self.text_file.write("multicasting from " + str(self.port)
-                                     + " to: " + str(group) + " the message " + message + "\n")
-            elif self.ordering_scheme == "causal_ordering":
-                self.msg_vector[self.proc_idx] = self.msg_vector[
-                    self.proc_idx] + 1
-                # stalls here
-                self.b_multicast_channel.multicast(
-                    message, group, self.msg_vector, self.proc_idx)
-                print "multicasting from " + str(self.port) + " to: " + str(group) + " the message " + message
-                self.text_file.write("multicasting from " + str(self.port) + " to: " + str(group)
-                                     + " the message " + message + " current vec: " + str(self.msg_vector) + "\n")
-            self.text_file.flush()
-            if self.b_multicast_channel.delivered.not_empty:
-                if self.ordering_scheme == "fifo_ordering":
-                    self.text_file.write(
-                        "Received " + str(self.b_multicast_channel.recv()) + "\n")
-                elif self.ordering_scheme == "causal_ordering":
-                    self.text_file.write("Received " + str(self.b_multicast_channel.recv())
-                                         + " current vec: " + str(self.msg_vector) + "\n")
-                self.text_file.flush()
-            time.sleep(0.2)
+
+            self.casual_multicast_channel.multicast(message, group)
+
+            log_message = "multicast from {} to {} the message {}".format(
+                self.port, group, message)
+            print log_message
+            print >>self.text_file, log_message
+
+            if self.casual_multicast_channel.can_recv():
+                addr, msg = self.casual_multicast_channel.recv()
+                # print "Received {}".format(msg)
+                print >>self.text_file, "Received {}".format(msg)
 
 
 def main():
@@ -128,12 +109,12 @@ def main():
         '--delay',
         metavar='seconds',
         help='average delay time',
-        type=float, default=0.2)
+        type=float, default=0.0)
     parser.add_argument(
         '--drop_rate',
         metavar='probability',
         help='chance that a message will be dropped',
-        type=float, default=0.1)
+        type=float, default=0.0)
     args = parser.parse_args()
 
     addresses = get_config()

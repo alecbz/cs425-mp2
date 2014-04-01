@@ -1,7 +1,6 @@
 import threading
 import random
 import time
-import copy
 from collections import defaultdict, namedtuple
 from heapq import *
 
@@ -15,7 +14,6 @@ class ReliableChannel:
     '''Building on top of UnreliableChannel, this channel supports
     guarenteed eventual delivery, FIFO delivery on a per-destination
     basis, and no duplicated delivery.'''
-    # changed based on ordering schemes
 
     def __init__(self, unreliable_channel):
         self.seq = defaultdict(int)
@@ -38,32 +36,23 @@ class ReliableChannel:
     def listen(self):
         while True:
             msg, addr = self.unreliable_channel.recv()
-            # message is an Ack
             if isinstance(msg, Ack):
                 with self.acks_cond:
                     self.acks.add((addr, msg.ack))
                     self.acks_cond.notify()
-            # message isn't an Ack
-        else:
-            # create Ack response for sender
+            else:
+                # create Ack response for sender
                 ack = Ack(msg.seq)
                 self.unreliable_channel.unicast(ack, addr)
                 with self.messages_cond:
                     # if the msg sequence isn't earlier than next seq to pop,
-                    # store it.
+                    # store it (otherwise we've already seen this message)
                     if not msg.seq < self.next_pop[addr]:
                         heappush(self.messages[addr], msg)
+                        self.messages_cond.notify()
 
     def _available(self):
-        # need to deepcopy so that size of dictionary does not change when
-        # iterating
-        messages_copy = copy.deepcopy(dict(self.messages))
-        retlist = [(addr, heap)
-                   for (addr, heap) in messages_copy.iteritems()
-                   # if heap is non-empty and msg seq number equals the next
-                   # seq number to be read
-                   if heap and heap[0].seq == self.next_pop[addr]]
-        return retlist
+        return [(addr, heap) for (addr, heap) in self.messages.iteritems() if heap and heap[0].seq == self.next_pop[addr]]
 
     def can_recv(self):
         return bool(self._available())
