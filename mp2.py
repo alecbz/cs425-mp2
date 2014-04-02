@@ -83,7 +83,8 @@ class Process(multiprocessing.Process):
         self.casual_multicast_channel = CasualMulticastChannel(
             self.reliable_channel, self.proc_idx, len(self.addresses))
 
-        logging.basicConfig(filename='{}.log'.format(self.port), level=logging.INFO)
+        logging.basicConfig(
+            filename='{}.log'.format(self.port), level=logging.INFO)
 
         while True:
             group = self.addresses
@@ -91,11 +92,13 @@ class Process(multiprocessing.Process):
 
             self.casual_multicast_channel.multicast(message, group)
 
-            logging.info("Multicast message '%s' from %s to group %s", message, self.addr, group)
+            logging.info("Multicast message '%s' from %s to group %s",
+                         message, self.addr, group)
 
             if self.casual_multicast_channel.can_recv():
                 addr, msg = self.casual_multicast_channel.recv()
-                logging.info("Received multicast message '%s' from %s", msg, addr)
+                logging.info(
+                    "Received multicast message '%s' from %s", msg, addr)
 
 
 def main():
@@ -116,7 +119,11 @@ def main():
     if args.config_file:
         args.config_file.close()
 
-    processes = [Process(addr.port, addresses, args.drop_rate, args.delay, "causal_ordering")
+    processes = [Process(addr.port,
+                         addresses,
+                         args.drop_rate,
+                         args.delay,
+                         "causal_ordering")
                  for addr in addresses if addr.ip == local_ip()]
     for p in processes:
         p.start()
