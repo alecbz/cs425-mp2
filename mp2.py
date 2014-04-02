@@ -102,7 +102,8 @@ class Process(multiprocessing.Process):
                 addr, msg = self.total_ordering_channel.recv()
                 logging.info(
                     "Received multicast message '%s' from %s", msg, addr)
-            time.sleep(0.2) 
+            time.sleep(0.2)
+
 
 def main():
     parser = argparse.ArgumentParser()
