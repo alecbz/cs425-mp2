@@ -70,8 +70,6 @@ class Process(multiprocessing.Process):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('', self.port))
-        # file_name = str(port) + ".log"
-        # self.text_file = open(file_name, 'w')
         self.unreliable_channel = UnreliableChannel(
             self.sock, drop_rate, delay)
 
