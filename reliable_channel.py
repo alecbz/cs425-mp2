@@ -53,7 +53,8 @@ class ReliableChannel:
 
     def _available(self):
         messages_copy = copy.deepcopy(dict(self.messages))
-        retlist = [(addr, heap) for (addr, heap) in messages_copy.iteritems() if heap and heap[0].seq == self.next_pop[addr]]
+        retlist = [(addr, heap) for (addr, heap) in messages_copy.iteritems()
+                   if heap and heap[0].seq == self.next_pop[addr]]
         return retlist
 
     def can_recv(self):
