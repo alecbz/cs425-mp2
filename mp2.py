@@ -1,14 +1,11 @@
+#!/usr/bin/python
 import argparse
-import os
 import json
 import multiprocessing
 import socket
-import signal
 import random
-import threading
-import time
-from collections import defaultdict, namedtuple
-from sys import argv, stdin
+import logging
+from collections import namedtuple
 
 from unreliable_channel import UnreliableChannel
 from reliable_channel import ReliableChannel
@@ -36,15 +33,14 @@ def local_ip():
     return local_ip.ip
 
 
-def get_config():
+def get_config(f):
     addresses = None
     num_processes = None
 
-    if len(argv) >= 2:
-        with open(argv[1], 'r') as f:
-            config = json.load(f)
-            num_processes = config.get('num_processes', None)
-            addresses = config.get('addresses', None)
+    if f:
+        config = json.load(f)
+        num_processes = config.get('num_processes', None)
+        addresses = config.get('addresses', None)
 
     if not num_processes:
         num_processes = len(addresses) if addresses else 5
@@ -64,6 +60,7 @@ class Process(multiprocessing.Process):
     def __init__(self, port, addresses, drop_rate, delay, ordering_scheme):
         super(Process, self).__init__()
         self.port = port
+        self.addr = (local_ip(), self.port)
         self.ordering_scheme = ordering_scheme
         self.addresses = addresses
         self.peers = [
@@ -73,8 +70,8 @@ class Process(multiprocessing.Process):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('', self.port))
-        file_name = str(port) + ".log"
-        self.text_file = open(file_name, 'w')
+        # file_name = str(port) + ".log"
+        # self.text_file = open(file_name, 'w')
         self.unreliable_channel = UnreliableChannel(
             self.sock, drop_rate, delay)
 
@@ -86,38 +83,39 @@ class Process(multiprocessing.Process):
         self.casual_multicast_channel = CasualMulticastChannel(
             self.reliable_channel, self.proc_idx, len(self.addresses))
 
+        logging.basicConfig(filename='{}.log'.format(self.port), level=logging.INFO)
+
         while True:
             group = self.addresses
             message = random.choice(MESSAGES)
 
             self.casual_multicast_channel.multicast(message, group)
 
-            log_message = "multicast from {} to {} the message {}".format(
-                self.port, group, message)
-            print log_message
-            print >>self.text_file, log_message
+            logging.info("Multicast message '%s' from %s to group %s", message, self.addr, group)
 
             if self.casual_multicast_channel.can_recv():
                 addr, msg = self.casual_multicast_channel.recv()
-                # print "Received {}".format(msg)
-                print >>self.text_file, "Received {}".format(msg)
+                logging.info("Received multicast message '%s' from %s", msg, addr)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--delay',
-        metavar='seconds',
+        metavar='SECONDS',
         help='average delay time',
-        type=float, default=0.0)
+        type=float, default=0.2)
     parser.add_argument(
         '--drop_rate',
-        metavar='probability',
         help='chance that a message will be dropped',
-        type=float, default=0.0)
+        type=float, default=0.1)
+    parser.add_argument('config_file', nargs='?', type=file)
     args = parser.parse_args()
 
-    addresses = get_config()
+    addresses = get_config(args.config_file)
+    if args.config_file:
+        args.config_file.close()
+
     processes = [Process(addr.port, addresses, args.drop_rate, args.delay, "causal_ordering")
                  for addr in addresses if addr.ip == local_ip()]
     for p in processes:

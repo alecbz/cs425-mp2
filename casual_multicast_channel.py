@@ -39,18 +39,15 @@ class CasualMulticastChannel:
 
             # check if we can deliver this message or need to buffer it
             if self.can_deliver(msg):
-                print "delivered!"
-                self.delivered.put((addr, msg))
+                self.delivered.put((addr, msg.data))
                 self.vector[msg.group][msg.from_id] += 1
             else:
-                print "buffering"
                 waiting.append((addr, msg))
 
             # check if any previously buffered messages are now deliverable
             still_bad = []
             for addr, msg in waiting:
                 if self.can_deliver(msg):
-                    print "delivered!"
                     self.delivered.put((addr, msg.data))
                 else:
                     still_bad.append((addr, msg))
