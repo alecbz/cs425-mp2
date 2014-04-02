@@ -6,10 +6,12 @@ import socket
 import random
 import logging
 from collections import namedtuple
+import time
 
 from unreliable_channel import UnreliableChannel
 from reliable_channel import ReliableChannel
 from casual_multicast_channel import CasualMulticastChannel
+from total_ordering_multicast import TotalOrderingChannel
 
 DEFAULT_PORT = 40060
 
@@ -65,6 +67,7 @@ class Process(multiprocessing.Process):
         self.addresses = addresses
         self.peers = [
             addr for addr in self.addresses if addr != (local_ip(), self.port)]
+        self.num_processes = len(self.addresses)
 
         # set up our UDP socket
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -80,6 +83,7 @@ class Process(multiprocessing.Process):
         self.reliable_channel = ReliableChannel(self.unreliable_channel)
         self.casual_multicast_channel = CasualMulticastChannel(
             self.reliable_channel, self.proc_idx, len(self.addresses))
+        #self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
 
         logging.basicConfig(
             filename='{}.log'.format(self.port), level=logging.INFO)
@@ -89,6 +93,7 @@ class Process(multiprocessing.Process):
             message = random.choice(MESSAGES)
 
             self.casual_multicast_channel.multicast(message, group)
+            #self.total_ordering_channel.multicast(message, group, self.proc_idx)
 
             logging.info("Multicast message '%s' from %s to group %s",
                          message, self.addr, group)
@@ -97,7 +102,7 @@ class Process(multiprocessing.Process):
                 addr, msg = self.casual_multicast_channel.recv()
                 logging.info(
                     "Received multicast message '%s' from %s", msg, addr)
-
+            time.sleep(0.2) 
 
 def main():
     parser = argparse.ArgumentParser()

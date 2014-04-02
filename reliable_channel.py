@@ -3,7 +3,7 @@ import random
 import time
 from collections import defaultdict, namedtuple
 from heapq import *
-
+import copy
 
 Message = namedtuple('Message', ['seq', 'data'])
 Ack = namedtuple('Ack', ['ack'])
@@ -52,7 +52,9 @@ class ReliableChannel:
                         self.messages_cond.notify()
 
     def _available(self):
-        return [(addr, heap) for (addr, heap) in self.messages.iteritems() if heap and heap[0].seq == self.next_pop[addr]]
+        messages_copy = copy.deepcopy(dict(self.messages))
+        retlist = [(addr, heap) for (addr, heap) in messages_copy.iteritems() if heap and heap[0].seq == self.next_pop[addr]]
+        return retlist
 
     def can_recv(self):
         return bool(self._available())
