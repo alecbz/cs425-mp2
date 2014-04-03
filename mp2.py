@@ -89,7 +89,7 @@ class Process(multiprocessing.Process):
             filename='{}.log'.format(self.port), level=logging.INFO)
 
         while True:
-            group = self.peers
+            group = self.addresses
             message = random.choice(MESSAGES)
 
             #self.casual_multicast_channel.multicast(message, group)
@@ -100,7 +100,7 @@ class Process(multiprocessing.Process):
             #for debugging
             print "multicasting from " + str(self.port) + " to:" + str(group) + " the message " + message 
             if self.total_ordering_channel.can_recv():
-                msg = self.total_ordering_channel.recv()
+                addr, msg = self.total_ordering_channel.recv()
                 logging.info(
                       "Received multicast message '%s' from %s", msg,msg[1] )
             time.sleep(4)
