@@ -45,7 +45,7 @@ def get_config(f):
         addresses = config.get('addresses', None)
 
     if not num_processes:
-        num_processes = len(addresses) if addresses else 5
+        num_processes = len(addresses) if addresses else 2
 
     if addresses:
         assert len(num_processes) == len(ips)
@@ -66,7 +66,7 @@ class Process(multiprocessing.Process):
         self.ordering_scheme = ordering_scheme
         self.addresses = addresses
         self.peers = [
-            addr for addr in self.addresses if addr != (local_ip(), self.port)]
+            addr for addr in self.addresses if addr != self.addr]
         self.num_processes = len(self.addresses)
 
         # set up our UDP socket
@@ -89,23 +89,23 @@ class Process(multiprocessing.Process):
             filename='{}.log'.format(self.port), level=logging.INFO)
 
         while True:
-            group = self.addresses
+            #num_processes_in_group = random.randint(1, len(self.addresses)-1)
+            #group = random.sample(self.peers, num_processes_in_group)
+            group = self.peers
             message = random.choice(MESSAGES)
-
+            
             #self.casual_multicast_channel.multicast(message, group)
             self.total_ordering_channel.multicast(message, group, self.proc_idx)
 
             logging.info("Multicast message '%s' from %s to group %s",
                          message, self.addr, group)
             #for debugging
-            print "multicasting from " + str(self.port) + " to:" + str(group) + " the message " + message 
+            #print "multicasting from " + str(self.port) + " to:" + str(group) + " the message " + message
             if self.total_ordering_channel.can_recv():
                 addr, msg = self.total_ordering_channel.recv()
                 logging.info(
                       "Received multicast message '%s' from %s", msg,msg[1] )
-            time.sleep(4)
-
-
+            time.sleep(2)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
