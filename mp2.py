@@ -100,8 +100,10 @@ class Process(multiprocessing.Process):
 
             if self.casual_multicast_channel.can_recv():
                 addr, msg = self.casual_multicast_channel.recv()
+                ip, port = addr
                 logging.info(
                     "Received multicast message '%s' from %s", msg, addr)
+                print "{}:{} says: {}".format(ip, port, msg)
             time.sleep(0.2)
 
 
