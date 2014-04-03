@@ -24,6 +24,7 @@ class ReliableChannel:
 
         # a dictionary from addresses to heaps of messages
         self.messages = defaultdict(list)
+        self.seen = set()
         # a dictionary from addresses to the next sequence number to pop
         self.next_pop = defaultdict(lambda: 1)
         self.messages_cond = threading.Condition()
@@ -46,8 +47,9 @@ class ReliableChannel:
                 with self.messages_cond:
                     # if the msg sequence isn't earlier than next seq to pop,
                     # store it (otherwise we've already seen this message)
-                    if not msg.seq < self.next_pop[addr]:
+                    if not (addr, msg.seq) in self.seen: # not msg.seq < self.next_pop[addr]:
                         heappush(self.messages[addr], msg)
+                        self.seen.add((addr, msg.seq))
                         self.messages_cond.notify()
 
     def _available(self):

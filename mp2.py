@@ -81,9 +81,9 @@ class Process(multiprocessing.Process):
         self.proc_idx = multiprocessing.current_process()._identity[0] - 1
         # initialized here because this launches a thread
         self.reliable_channel = ReliableChannel(self.unreliable_channel)
-        #self.casual_multicast_channel = CasualMulticastChannel(
-        #self.reliable_channel, self.proc_idx, len(self.addresses))
-        self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
+        self.casual_multicast_channel = CasualMulticastChannel(
+            self.reliable_channel, self.proc_idx, len(self.addresses))
+        # self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
 
         logging.basicConfig(
             filename='{}.log'.format(self.port), level=logging.INFO)
@@ -104,8 +104,20 @@ class Process(multiprocessing.Process):
             if self.total_ordering_channel.can_recv():
                 addr, msg = self.total_ordering_channel.recv()
                 logging.info(
-                      "Received multicast message '%s' from %s", msg,msg[1] )
-            time.sleep(2)
+                    "Received multicast message '%s' from %s", msg, addr)
+                print "{}:{} says: {}".format(ip, port, msg)
+            time.sleep(0.2)
+
+            # self.total_ordering_channel.multicast(message, group, self.proc_idx)
+            # for debugging
+            # print "multicasting from " + str(self.port) + " to:" + str(group) + " the message " + message 
+            # if self.total_ordering_channel.can_recv():
+            #     addr, msg = self.total_ordering_channel.recv()
+            #     logging.info(
+            #           "Received multicast message '%s' from %s", msg,msg[1] )
+            # time.sleep(4)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
