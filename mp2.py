@@ -10,7 +10,7 @@ import time
 
 from unreliable_channel import UnreliableChannel
 from reliable_channel import ReliableChannel
-from casual_multicast_channel import CasualMulticastChannel
+from causal_multicast_channel import CausalMulticastChannel
 from total_ordering_multicast import TotalOrderingChannel
 
 DEFAULT_PORT = 40060
@@ -87,7 +87,7 @@ class Process(multiprocessing.Process):
         if self.ordering == 'total':
             self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
         elif self.ordering == 'causal':
-            self.causal_multicast_channel = CasualMulticastChannel(
+            self.causal_multicast_channel = CausalMulticastChannel(
                 self.reliable_channel, self.proc_idx, len(self.addresses))
         else:
             print "Unknown ordering scheme '{}'".format(self.ordering)

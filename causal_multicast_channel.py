@@ -8,7 +8,7 @@ from vector_timestamp import VectorTimestamp
 Message = namedtuple('Message', ['vector', 'data', 'from_id', 'group'])
 
 
-class CasualMulticastChannel:
+class CausalMulticastChannel:
 
     def __init__(self, reliable_channel, idx, num_processes):
         # each processes' way of knowing what messages it has delivered
