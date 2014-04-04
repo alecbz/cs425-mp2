@@ -29,7 +29,13 @@ class CausalMulticastChannel:
 
     def can_deliver(self, msg):
         vector = self.vector[msg.group]
-        return vector[msg.from_id] + 1 == msg.vector[msg.from_id] and all(msg.vector[k] <= vector[k] for k in range(self.num_processes) if k != msg.from_id)
+        if vector[msg.from_id] + 1 != msg.vector[msg.from_id]:
+            return False
+        if any(msg.vector[k] > vector[k]
+                for k in range(self.num_processes)
+                if k != msg.from_id):
+            return False
+        return True
 
     def listen(self):
         waiting = []

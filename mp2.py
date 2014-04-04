@@ -86,7 +86,10 @@ class Process(multiprocessing.Process):
         self.reliable_channel = ReliableChannel(self.unreliable_channel)
         if self.ordering == 'total':
             self.total_ordering_channel = TotalOrderingChannel(
-                self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
+                self.reliable_channel,
+                self.num_processes,
+                self.addr,
+                self.proc_idx)
         elif self.ordering == 'causal':
             self.causal_multicast_channel = CausalMulticastChannel(
                 self.reliable_channel, self.proc_idx, len(self.addresses))
