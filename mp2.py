@@ -36,13 +36,11 @@ def local_ip():
 
 
 def get_config(f):
-    addresses = None
-    num_processes = None
-
     if f:
         config = json.load(f)
         num_processes = config.get('num_processes', None)
         addresses = config.get('addresses', None)
+        ordering = config.get('ordering', 'total')
 
     if not num_processes:
         num_processes = len(addresses) if addresses else 6
@@ -54,16 +52,16 @@ def get_config(f):
         addresses = [Address(local_ip(), DEFAULT_PORT + i)
                      for i in range(num_processes)]
 
-    return addresses
+    return addresses, ordering
 
 
 class Process(multiprocessing.Process):
 
-    def __init__(self, port, addresses, drop_rate, delay, ordering_scheme):
+    def __init__(self, port, addresses, drop_rate, delay, ordering):
         super(Process, self).__init__()
         self.port = port
         self.addr = (local_ip(), self.port)
-        self.ordering_scheme = ordering_scheme
+        self.ordering = ordering
         self.addresses = addresses
         self.peers = [
             addr for addr in self.addresses if addr != self.addr]
@@ -79,31 +77,45 @@ class Process(multiprocessing.Process):
     def run(self):
         # for causal ordering, idx of the curr process in vector
         self.proc_idx = multiprocessing.current_process()._identity[0] - 1
-        # initialized here because this launches a thread
+
+        # initialized here because these launch threads
         self.reliable_channel = ReliableChannel(self.unreliable_channel)
-        #self.casual_multicast_channel = CasualMulticastChannel(
-        #    self.reliable_channel, self.proc_idx, len(self.addresses))
-        self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
+        if self.ordering == 'total':
+            self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
+        elif self.ordering == 'causal':
+            self.casual_multicast_channel = CasualMulticastChannel(
+                self.reliable_channel, self.proc_idx, len(self.addresses))
+        else:
+            print "Unknown ordering scheme '{}'".format(self.ordering)
+            return 1
 
         logging.basicConfig(
             filename='{}.log'.format(self.port), level=logging.INFO)
 
         while True:
-            #num_processes_in_group = random.randint(1, len(self.addresses)-1)
-            #group = random.sample(self.peers, num_processes_in_group)
             group = self.addresses
             message = random.choice(MESSAGES)
             
-            #self.casual_multicast_channel.multicast(message, group)
-            self.total_ordering_channel.multicast(message, group, self.proc_idx)
+            if self.ordering == 'total':
+                self.total_ordering_channel.multicast(message, group, self.proc_idx)
+            else:
+                self.causal_multicast_channel.multicast(message, group)
 
             logging.info("Multicast message '%s' from %s to group %s",
                          message, self.addr, group)
-            if self.total_ordering_channel.can_recv():
-                addr, msg = self.total_ordering_channel.recv()
-                logging.info(
-                    "Received multicast message '%s' from %s", msg, addr)
-            time.sleep(5)
+
+            if self.ordering == 'total':
+                if self.total_ordering_channel.can_recv():
+                    addr, msg = self.total_ordering_channel.recv()
+                    logging.info(
+                        "Received multicast message '%s' from %s", msg, addr)
+                time.sleep(5)
+            else:
+                if self.causal_multicast_channel.can_recv():
+                    addr, msg = self.causal_multicast_channel.recv()
+                    logging.info(
+                        "Received multicast message '%s' from %s", msg, addr)
+
 
 
 def main():
@@ -120,7 +132,7 @@ def main():
     parser.add_argument('config_file', nargs='?', type=file)
     args = parser.parse_args()
 
-    addresses = get_config(args.config_file)
+    addresses, ordering = get_config(args.config_file)
     if args.config_file:
         args.config_file.close()
 
@@ -128,7 +140,7 @@ def main():
                          addresses,
                          args.drop_rate,
                          args.delay,
-                         "causal_ordering")
+                         ordering)
                  for addr in addresses if addr.ip == local_ip()]
     for p in processes:
         p.start()
