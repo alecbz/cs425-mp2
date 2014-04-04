@@ -36,11 +36,15 @@ def local_ip():
 
 
 def get_config(f):
+    num_processes = None
+    addresses = None
+    ordering = 'total'
+
     if f:
         config = json.load(f)
-        num_processes = config.get('num_processes', None)
-        addresses = config.get('addresses', None)
-        ordering = config.get('ordering', 'total')
+        num_processes = config.get('num_processes', num_processes)
+        addresses = config.get('addresses', addresses)
+        ordering = config.get('ordering', ordering)
 
     if not num_processes:
         num_processes = len(addresses) if addresses else 6
@@ -83,7 +87,7 @@ class Process(multiprocessing.Process):
         if self.ordering == 'total':
             self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
         elif self.ordering == 'causal':
-            self.casual_multicast_channel = CasualMulticastChannel(
+            self.causal_multicast_channel = CasualMulticastChannel(
                 self.reliable_channel, self.proc_idx, len(self.addresses))
         else:
             print "Unknown ordering scheme '{}'".format(self.ordering)
