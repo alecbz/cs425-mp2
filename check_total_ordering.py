@@ -1,22 +1,28 @@
-import re
-from collections import namedtuple
+import pickle
+from glob import glob
 
-MarkedMessage = namedtuple('MarkedMessage', ['seq', 'data', 'msg_id', 'addr'])
-
-def check_logs():
-    log_files = ["40060.log", "40061.log", "40062.log", "40063.log", "40064.log", "40065.log"]
-    for lf in log_files:
-        print "Log File: " + lf
-        log_file = open(lf)
-        pattern = re.compile("\'MulticastMessage.+\'") 
-        for line in log_file:
-            match = pattern.search(line)
-            if match:
-                print match.group()
-        print ""
 
 def main():
-    check_logs()
+    logs = [open(f, 'r') for f in glob('*.total.binlog')]
+    messages = []
+    for log in logs:
+        msgs = []
+        while True:
+            try:
+                msgs.append(pickle.load(log))
+            except EOFError:
+                break
+        messages.append(msgs)
+
+    # truncate all lists to lenngth of the shortest one
+    min_len = min(len(msgs) for msgs in messages)
+    messages = [msgs[:min_len] for msgs in messages]
+
+    first = messages[0]
+    print all(msgs == first for msgs in messages)
+
+
+
 
 if __name__ == "__main__":
     main()

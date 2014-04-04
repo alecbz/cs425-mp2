@@ -91,7 +91,6 @@ class TotalOrderingChannel:
                 with self.delivered_lock:
                     del self.delivered[(addr, msg.data)]
                     self.delivered[(addr, updated_message)] = msg.seq
-                print "MSG: " + str(msg) + " priority: " + str(msg.seq)
 
     def can_recv(self):
         with self.delivered_lock:
@@ -103,9 +102,9 @@ class TotalOrderingChannel:
 
     def recv(self):
         with self.delivered_lock:
-            msg = self.delivered.smallest()
-            del self.delivered[msg]
-        return msg
+            addr, msg = self.delivered.smallest()
+            del self.delivered[addr,msg]
+        return addr, msg.data
 
     def multicast(self, obj, group, from_id):
         # msg_id starts at 0

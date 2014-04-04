@@ -1,4 +1,4 @@
 {
-  "num_processes": 2,
-  "ordering": "causal"
+  "num_processes": 6,
+  "ordering": "total"
 }

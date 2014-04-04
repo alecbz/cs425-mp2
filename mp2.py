@@ -5,7 +5,10 @@ import multiprocessing
 import socket
 import random
 import logging
+import pickle
+import os
 from collections import namedtuple
+from glob import glob
 import time
 
 from unreliable_channel import UnreliableChannel
@@ -79,12 +82,14 @@ class Process(multiprocessing.Process):
             self.sock, drop_rate, delay)
 
     def run(self):
+        self.binary_log = open('{}.{}.binlog'.format(self.port, self.ordering), 'w')
         # for causal ordering, idx of the curr process in vector
         self.proc_idx = multiprocessing.current_process()._identity[0] - 1
 
         # initialized here because these launch threads
         self.reliable_channel = ReliableChannel(self.unreliable_channel)
         if self.ordering == 'total':
+            self.counter = 1
             self.total_ordering_channel = TotalOrderingChannel(
                 self.reliable_channel,
                 self.num_processes,
@@ -102,9 +107,10 @@ class Process(multiprocessing.Process):
 
         while True:
             group = self.addresses
-            message = random.choice(MESSAGES)
 
             if self.ordering == 'total':
+                message = "{} message {}".format(self.addr, self.counter)
+                self.counter += 1
                 self.total_ordering_channel.multicast(
                     message, group, self.proc_idx)
             else:
@@ -116,9 +122,11 @@ class Process(multiprocessing.Process):
             if self.ordering == 'total':
                 if self.total_ordering_channel.can_recv():
                     addr, msg = self.total_ordering_channel.recv()
+                    pickle.dump((addr, msg), self.binary_log)
+                    self.binary_log.flush()
                     logging.info(
                         "Received multicast message '%s' from %s", msg, addr)
-                time.sleep(5)
+                    print "{} received: '{}'".format(self.addr, msg)
             else:
                 if self.causal_multicast_channel.can_recv():
                     addr, msg = self.causal_multicast_channel.recv()
@@ -127,6 +135,8 @@ class Process(multiprocessing.Process):
 
 
 def main():
+    for f in glob('*.log') + glob('*.binlog'):
+        os.remove(f)
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--delay',
