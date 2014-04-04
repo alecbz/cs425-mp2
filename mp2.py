@@ -45,7 +45,7 @@ def get_config(f):
         addresses = config.get('addresses', None)
 
     if not num_processes:
-        num_processes = len(addresses) if addresses else 5
+        num_processes = len(addresses) if addresses else 6
 
     if addresses:
         assert len(num_processes) == len(ips)

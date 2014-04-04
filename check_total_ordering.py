@@ -4,7 +4,7 @@ from collections import namedtuple
 MarkedMessage = namedtuple('MarkedMessage', ['seq', 'data', 'msg_id', 'addr'])
 
 def check_logs():
-    log_files = ["40060.log", "40061.log", "40062.log", "40063.log", "40064.log"]
+    log_files = ["40060.log", "40061.log", "40062.log", "40063.log", "40064.log", "40065.log"]
     for lf in log_files:
         print "Log File: " + lf
         log_file = open(lf)
