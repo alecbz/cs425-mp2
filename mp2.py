@@ -85,7 +85,8 @@ class Process(multiprocessing.Process):
         # initialized here because these launch threads
         self.reliable_channel = ReliableChannel(self.unreliable_channel)
         if self.ordering == 'total':
-            self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
+            self.total_ordering_channel = TotalOrderingChannel(
+                self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
         elif self.ordering == 'causal':
             self.causal_multicast_channel = CausalMulticastChannel(
                 self.reliable_channel, self.proc_idx, len(self.addresses))
@@ -99,9 +100,10 @@ class Process(multiprocessing.Process):
         while True:
             group = self.addresses
             message = random.choice(MESSAGES)
-            
+
             if self.ordering == 'total':
-                self.total_ordering_channel.multicast(message, group, self.proc_idx)
+                self.total_ordering_channel.multicast(
+                    message, group, self.proc_idx)
             else:
                 self.causal_multicast_channel.multicast(message, group)
 
@@ -119,7 +121,6 @@ class Process(multiprocessing.Process):
                     addr, msg = self.causal_multicast_channel.recv()
                     logging.info(
                         "Received multicast message '%s' from %s", msg, addr)
-
 
 
 def main():
