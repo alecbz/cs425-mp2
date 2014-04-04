@@ -45,7 +45,7 @@ def get_config(f):
         addresses = config.get('addresses', None)
 
     if not num_processes:
-        num_processes = len(addresses) if addresses else 2
+        num_processes = len(addresses) if addresses else 5
 
     if addresses:
         assert len(num_processes) == len(ips)
@@ -81,9 +81,9 @@ class Process(multiprocessing.Process):
         self.proc_idx = multiprocessing.current_process()._identity[0] - 1
         # initialized here because this launches a thread
         self.reliable_channel = ReliableChannel(self.unreliable_channel)
-        self.casual_multicast_channel = CasualMulticastChannel(
-            self.reliable_channel, self.proc_idx, len(self.addresses))
-        # self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
+        #self.casual_multicast_channel = CasualMulticastChannel(
+        #    self.reliable_channel, self.proc_idx, len(self.addresses))
+        self.total_ordering_channel = TotalOrderingChannel(self.reliable_channel, self.num_processes, self.addr, self.proc_idx)
 
         logging.basicConfig(
             filename='{}.log'.format(self.port), level=logging.INFO)
@@ -91,7 +91,7 @@ class Process(multiprocessing.Process):
         while True:
             #num_processes_in_group = random.randint(1, len(self.addresses)-1)
             #group = random.sample(self.peers, num_processes_in_group)
-            group = self.peers
+            group = self.addresses
             message = random.choice(MESSAGES)
             
             #self.casual_multicast_channel.multicast(message, group)
@@ -99,23 +99,11 @@ class Process(multiprocessing.Process):
 
             logging.info("Multicast message '%s' from %s to group %s",
                          message, self.addr, group)
-            #for debugging
-            #print "multicasting from " + str(self.port) + " to:" + str(group) + " the message " + message
             if self.total_ordering_channel.can_recv():
                 addr, msg = self.total_ordering_channel.recv()
                 logging.info(
                     "Received multicast message '%s' from %s", msg, addr)
-                print "{}:{} says: {}".format(ip, port, msg)
-            time.sleep(0.2)
-
-            # self.total_ordering_channel.multicast(message, group, self.proc_idx)
-            # for debugging
-            # print "multicasting from " + str(self.port) + " to:" + str(group) + " the message " + message 
-            # if self.total_ordering_channel.can_recv():
-            #     addr, msg = self.total_ordering_channel.recv()
-            #     logging.info(
-            #           "Received multicast message '%s' from %s", msg,msg[1] )
-            # time.sleep(4)
+            time.sleep(5)
 
 
 def main():

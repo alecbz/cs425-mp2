@@ -8,7 +8,7 @@ def check_logs():
     for lf in log_files:
         print "Log File: " + lf
         log_file = open(lf)
-        pattern = re.compile("\'MarkedMessage.+\'") 
+        pattern = re.compile("\'MulticastMessage.+\'") 
         for line in log_file:
             match = pattern.search(line)
             if match:
