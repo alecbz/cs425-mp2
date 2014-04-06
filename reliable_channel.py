@@ -75,7 +75,6 @@ class ReliableChannel:
     def unicast(self, data, addr):
         self.seq[addr] += 1  # get the sequence number for this message
         msg = Message(self.seq[addr], data)
-        print "Message sequence number " + str(msg.seq) + "for address " + str(addr) + " data is " + str(data)
         while True:
             # send a message
             self.unreliable_channel.unicast(msg, addr)
