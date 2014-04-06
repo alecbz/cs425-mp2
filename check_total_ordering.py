@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import pickle
 from glob import glob
 
@@ -18,8 +19,7 @@ def main():
     min_len = min(len(msgs) for msgs in messages)
     messages = [msgs[:min_len] for msgs in messages]
 
-    first = messages[0]
-    print all(msgs == first for msgs in messages)
+    print all(msgs == messages[0] for msgs in messages)
 
 
 
