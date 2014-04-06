@@ -47,7 +47,7 @@ class ReliableChannel:
                 with self.messages_cond:
                     # if the msg sequence isn't earlier than next seq to pop,
                     # store it (otherwise we've already seen this message)
-                    if not (addr, msg.seq) in self.seen: # not msg.seq < self.next_pop[addr]:
+                    if not (addr, msg.seq) in self.seen:
                         heappush(self.messages[addr], msg)
                         self.seen.add((addr, msg.seq))
                         self.messages_cond.notify()
