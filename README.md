@@ -1,6 +1,6 @@
 # CS 425 MP2
 
-Code for Alec Benzer and Vignesh Rajas's solution to MP2
+Code for Alec Benzer and Vignesh Raja's solution to MP2
 
 ## Running
 
