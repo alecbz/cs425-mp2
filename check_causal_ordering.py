@@ -3,6 +3,7 @@ import pickle
 from glob import glob
 from mp2 import Address
 
+
 def vector_lt(v1, v2):
     return all(a <= b for (a, b) in zip(v1, v2)) and any(a != b for (a, b) in zip(v1, v2))
 

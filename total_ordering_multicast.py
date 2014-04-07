@@ -100,7 +100,7 @@ class TotalOrderingChannel:
     def recv(self):
         with self.delivered_lock:
             addr, msg = self.delivered.smallest()
-            del self.delivered[addr,msg]
+            del self.delivered[addr, msg]
         return addr, msg.data
 
     def multicast(self, obj, group):

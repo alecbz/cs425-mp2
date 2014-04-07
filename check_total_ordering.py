@@ -23,7 +23,5 @@ def main():
     print all(msgs == messages[0] for msgs in messages)
 
 
-
-
 if __name__ == "__main__":
     main()

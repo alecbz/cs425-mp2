@@ -102,12 +102,12 @@ class Process(multiprocessing.Process):
 
             self.vector[self.addr] += 1
             if self.ordering == 'total':
-                # objects we send over the total ordering channel must be hashable because of the PriorityDictionary
+                # objects we send over the total ordering channel must be
+                # hashable because of the PriorityDictionary
                 to_send = tuple(self.vector.iteritems())
                 self.total_ordering_channel.multicast(to_send, group)
             else:
                 self.causal_multicast_channel.multicast(self.vector, group)
-
 
             vector = None
             if self.ordering == 'total':
@@ -128,7 +128,8 @@ class Process(multiprocessing.Process):
             if vector:
                 for addr in vector:
                     if addr != self.addr:
-                        self.vector[addr] = max(vector[addr], self.vector[addr])
+                        self.vector[addr] = max(
+                            vector[addr], self.vector[addr])
                     else:
                         self.vector[self.addr] += 1
 
