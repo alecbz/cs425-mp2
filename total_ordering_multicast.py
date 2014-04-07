@@ -18,10 +18,9 @@ MarkedMessage = namedtuple('MarkedMessage', ['seq', 'data', 'msg_id', 'addr'])
 
 class TotalOrderingChannel:
 
-    def __init__(self, reliable_channel, num_processes, addr, from_id):
+    def __init__(self, reliable_channel, num_processes, addr):
 
         self.num_processes = num_processes
-        self.from_id = from_id
         self.addr = addr
         self.delivered = priorityDictionary()
         self.reliable_channel = reliable_channel
@@ -48,15 +47,13 @@ class TotalOrderingChannel:
             addr, msg = self.reliable_channel.recv()
             if isinstance(msg, MulticastMessage):
                 self.seq += 1
-                suffixed_priority = int(
-                    str(self.seq) + str(self.from_id))
                 # keep the same msg id as the multicastmessage.
                 proposal = Proposal(
-                    suffixed_priority, msg.msg_id, self.addr)
+                    self.seq, msg.msg_id, self.addr)
                 # send proposal back to initiator
                 self.reliable_channel.unicast(proposal, addr)
                 with self.delivered_lock:
-                    self.delivered.__setitem__((addr, msg), self.seq)
+                    self.delivered[addr, msg] = self.seq
             elif isinstance(msg, Proposal):
                 # get all the proposal of processes that you sent the
                 # message to
@@ -79,7 +76,7 @@ class TotalOrderingChannel:
                     # priority
                     group = [
                         proposal.addr for proposal in list_of_responses]
-                    self.final_multicast(final_msg, group, self.from_id)
+                    self.final_multicast(final_msg, group)
             elif isinstance(msg, MarkedMessage):
                 # means you received the final priority
                 # keep track of the latest sequence number heard so far
@@ -106,7 +103,7 @@ class TotalOrderingChannel:
             del self.delivered[addr,msg]
         return addr, msg.data
 
-    def multicast(self, obj, group, from_id):
+    def multicast(self, obj, group):
         # msg_id starts at 0
         with self.group_size_lock:
             self.group_size_dict[self.id_count] = len(group)
@@ -117,6 +114,6 @@ class TotalOrderingChannel:
             self.reliable_channel.unicast(msg, addr)
         self.id_count += 1
 
-    def final_multicast(self, msg, group, from_id):
+    def final_multicast(self, msg, group):
         for addr in group:
             self.reliable_channel.unicast(msg, addr)

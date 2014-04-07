@@ -1,10 +1,11 @@
 #!/usr/bin/python
 import pickle
 from glob import glob
+from mp2 import Address
 
 
 def main():
-    logs = [open(f, 'r') for f in glob('*.total.binlog')]
+    logs = [open(f, 'r') for f in glob('*.binlog')]
     messages = []
     for log in logs:
         msgs = []

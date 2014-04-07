@@ -4,7 +4,6 @@ import json
 import multiprocessing
 import socket
 import random
-import logging
 import pickle
 import os
 from collections import namedtuple
@@ -19,8 +18,6 @@ from total_ordering_multicast import TotalOrderingChannel
 DEFAULT_PORT = 40060
 
 Address = namedtuple('Address', ['ip', 'port'])
-
-MESSAGES = ['a', 'b', 'c', 'd', 'e']
 
 
 def local_ip():
@@ -82,61 +79,65 @@ class Process(multiprocessing.Process):
             self.sock, drop_rate, delay)
 
     def run(self):
-        self.binary_log = open('{}.{}.binlog'.format(self.port, self.ordering), 'w')
-        # for causal ordering, idx of the curr process in vector
-        self.proc_idx = multiprocessing.current_process()._identity[0] - 1
+        self.binary_log = open('{}.binlog'.format(self.port), 'w')
 
         # initialized here because these launch threads
         self.reliable_channel = ReliableChannel(self.unreliable_channel)
+
+        self.vector = {addr: 0 for addr in self.addresses}
         if self.ordering == 'total':
-            self.counter = 1
             self.total_ordering_channel = TotalOrderingChannel(
                 self.reliable_channel,
                 self.num_processes,
-                self.addr,
-                self.proc_idx)
+                self.addr)
         elif self.ordering == 'causal':
             self.causal_multicast_channel = CausalMulticastChannel(
-                self.reliable_channel, self.proc_idx, len(self.addresses))
+                self.reliable_channel, self.addr, self.addresses)
         else:
             print "Unknown ordering scheme '{}'".format(self.ordering)
             return 1
 
-        logging.basicConfig(
-            filename='{}.log'.format(self.port), level=logging.INFO)
-
         while True:
             group = self.addresses
 
+            self.vector[self.addr] += 1
             if self.ordering == 'total':
-                message = "{} message {}".format(self.addr, self.counter)
-                self.counter += 1
-                self.total_ordering_channel.multicast(
-                    message, group, self.proc_idx)
+                # objects we send over the total ordering channel must be hashable because of the PriorityDictionary
+                to_send = tuple(self.vector.iteritems())
+                self.total_ordering_channel.multicast(to_send, group)
             else:
-                self.causal_multicast_channel.multicast(message, group)
+                self.causal_multicast_channel.multicast(self.vector, group)
 
-            logging.info("Multicast message '%s' from %s to group %s",
-                         message, self.addr, group)
 
+            vector = None
             if self.ordering == 'total':
                 if self.total_ordering_channel.can_recv():
-                    addr, msg = self.total_ordering_channel.recv()
-                    pickle.dump((addr, msg), self.binary_log)
+                    addr, recvd = self.total_ordering_channel.recv()
+                    vector = dict(recvd)
+                    print "{} received from {}".format(self.addr, addr)
+                    pickle.dump((addr, vector), self.binary_log)
                     self.binary_log.flush()
-                    logging.info(
-                        "Received multicast message '%s' from %s", msg, addr)
-                    print "{} received: '{}'".format(self.addr, msg)
             else:
                 if self.causal_multicast_channel.can_recv():
-                    addr, msg = self.causal_multicast_channel.recv()
-                    logging.info(
-                        "Received multicast message '%s' from %s", msg, addr)
+                    addr, vector = self.causal_multicast_channel.recv()
+                    print "{} received from {}".format(self.addr, addr)
+                    pickle.dump((addr, vector), self.binary_log)
+                    self.binary_log.flush()
+
+            # update the vector timestamp
+            if vector:
+                for addr in vector:
+                    if addr != self.addr:
+                        self.vector[addr] = max(vector[addr], self.vector[addr])
+                    else:
+                        self.vector[self.addr] += 1
 
 
 def main():
+    # clear logs from previous run
     for f in glob('*.log') + glob('*.binlog'):
         os.remove(f)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--delay',
