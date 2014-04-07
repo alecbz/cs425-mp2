@@ -3,7 +3,6 @@ import threading
 from Queue import Queue
 from collections import defaultdict, namedtuple
 from reliable_channel import ReliableChannel
-# from vector_timestamp import VectorTimestamp
 
 Message = namedtuple('Message', ['vector', 'data', 'sender', 'group'])
 
